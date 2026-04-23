@@ -115,8 +115,23 @@
     .error { text-align: center; padding: 20px; color: var(--red); font-size: 12px; }
     .snapshot-bar { background: rgba(251,191,36,.1); border-bottom: 1px solid rgba(251,191,36,.25); padding: 6px 24px; font-size: 12px; color: var(--amber); text-align: center; display: none; }
     .snapshot-bar.show { display: block; }
+
+    /* ── Account bar ── */
+    .account-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; overflow-x: auto; }
+    .acc-btn { flex-shrink: 0; padding: 10px 16px; font-size: 12px; font-weight: 500; color: var(--text3); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .acc-btn:hover { color: var(--text2); }
+    .acc-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .acc-btn.all-btn { color: var(--purple); }
+    .acc-btn.all-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .acc-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+    .acc-status { font-size: 10px; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+    .acc-online { background: var(--green); }
+    .acc-stale { background: var(--amber); }
+
+    /* ── Accounts overview table ── */
+    #accountsOverview { display: none; }
   </style>
-<script>window.__CCUSAGE_DATA__ = {"today":{"daily":[{"date":"2026-04-23","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"totalTokens":3500695,"totalCost":2.750648699999999,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"cost":2.750648699999999}]}],"totals":{"inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"totalCost":2.750648699999999,"totalTokens":3500695}},"daily":{"daily":[{"date":"2026-04-09","inputTokens":97771,"outputTokens":18683,"cacheCreationTokens":817746,"cacheReadTokens":2048038,"totalTokens":2982238,"totalCost":3.3818484000000004,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":90,"outputTokens":15043,"cacheCreationTokens":575733,"cacheReadTokens":1868668,"cost":2.94551415},{"modelName":"claude-haiku-4-5-20251001","inputTokens":97681,"outputTokens":3640,"cacheCreationTokens":242013,"cacheReadTokens":179370,"cost":0.43633425000000003}]},{"date":"2026-04-14","inputTokens":14,"outputTokens":1667,"cacheCreationTokens":514099,"cacheReadTokens":212068,"totalTokens":727848,"totalCost":2.0165386499999998,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":14,"outputTokens":1667,"cacheCreationTokens":514099,"cacheReadTokens":212068,"cost":2.0165386499999998}]},{"date":"2026-04-15","inputTokens":9,"outputTokens":4234,"cacheCreationTokens":209853,"cacheReadTokens":893135,"totalTokens":1107231,"totalCost":1.1184262499999997,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":9,"outputTokens":4234,"cacheCreationTokens":209853,"cacheReadTokens":893135,"cost":1.1184262499999997}]},{"date":"2026-04-17","inputTokens":20,"outputTokens":2103,"cacheCreationTokens":17686,"cacheReadTokens":191020,"totalTokens":210829,"totalCost":0.15523350000000002,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":20,"outputTokens":2103,"cacheCreationTokens":17686,"cacheReadTokens":191020,"cost":0.15523350000000002}]},{"date":"2026-04-21","inputTokens":80,"outputTokens":8706,"cacheCreationTokens":85602,"cacheReadTokens":832464,"totalTokens":926852,"totalCost":0.7015766999999998,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":80,"outputTokens":8706,"cacheCreationTokens":85602,"cacheReadTokens":832464,"cost":0.7015766999999998}]},{"date":"2026-04-22","inputTokens":166645,"outputTokens":322824,"cacheCreationTokens":4727238,"cacheReadTokens":39441236,"totalTokens":44657943,"totalCost":34.401011300000036,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162639,"outputTokens":317398,"cacheCreationTokens":4567684,"cacheReadTokens":39243036,"cost":34.15061280000002},{"modelName":"claude-haiku-4-5-20251001","inputTokens":4006,"outputTokens":5426,"cacheCreationTokens":159554,"cacheReadTokens":198200,"cost":0.25039849999999997}]},{"date":"2026-04-23","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"totalTokens":3500695,"totalCost":2.750648699999999,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"cost":2.750648699999999}]}],"totals":{"inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalCost":44.525283500000036,"totalTokens":54113636}},"weekly":{"weekly":[{"week":"2026-04-05","inputTokens":97771,"outputTokens":18683,"cacheCreationTokens":817746,"cacheReadTokens":2048038,"totalTokens":2982238,"totalCost":3.3818484000000004,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":90,"outputTokens":15043,"cacheCreationTokens":575733,"cacheReadTokens":1868668,"cost":2.94551415},{"modelName":"claude-haiku-4-5-20251001","inputTokens":97681,"outputTokens":3640,"cacheCreationTokens":242013,"cacheReadTokens":179370,"cost":0.43633425000000003}]},{"week":"2026-04-12","inputTokens":43,"outputTokens":8004,"cacheCreationTokens":741638,"cacheReadTokens":1296223,"totalTokens":2045908,"totalCost":3.2901983999999995,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":43,"outputTokens":8004,"cacheCreationTokens":741638,"cacheReadTokens":1296223,"cost":3.2901983999999995}]},{"week":"2026-04-19","inputTokens":166810,"outputTokens":385207,"cacheCreationTokens":5076944,"cacheReadTokens":43456529,"totalTokens":49085490,"totalCost":37.85323670000003,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162804,"outputTokens":379781,"cacheCreationTokens":4917390,"cacheReadTokens":43258329,"cost":37.602838200000015},{"modelName":"claude-haiku-4-5-20251001","inputTokens":4006,"outputTokens":5426,"cacheCreationTokens":159554,"cacheReadTokens":198200,"cost":0.25039849999999997}]}],"totals":{"inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalCost":44.52528350000003,"totalTokens":54113636}},"monthly":{"monthly":[{"month":"2026-04","inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalTokens":54113636,"totalCost":44.525283500000036,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162937,"outputTokens":402828,"cacheCreationTokens":6234761,"cacheReadTokens":46423220,"cost":43.83855075000002},{"modelName":"claude-haiku-4-5-20251001","inputTokens":101687,"outputTokens":9066,"cacheCreationTokens":401567,"cacheReadTokens":377570,"cost":0.68673275}]}],"totals":{"inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalCost":44.525283500000036,"totalTokens":54113636}},"generatedAt":"2026-04-23T07:32:01.325Z","period":{"since":"20260124","until":"20260423"}};</script>
+<script>window.__CCUSAGE_DATA__ = {"today":{"daily":[{"date":"2026-04-23","inputTokens":401,"outputTokens":99360,"cacheCreationTokens":1600012,"cacheReadTokens":15967032,"totalTokens":17666805,"totalCost":12.28175759999999,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":401,"outputTokens":99360,"cacheCreationTokens":1600012,"cacheReadTokens":15967032,"cost":12.28175759999999}]}],"totals":{"inputTokens":401,"outputTokens":99360,"cacheCreationTokens":1600012,"cacheReadTokens":15967032,"totalCost":12.28175759999999,"totalTokens":17666805}},"daily":{"daily":[{"date":"2026-04-09","inputTokens":97771,"outputTokens":18683,"cacheCreationTokens":817746,"cacheReadTokens":2048038,"totalTokens":2982238,"totalCost":3.3818484000000004,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":90,"outputTokens":15043,"cacheCreationTokens":575733,"cacheReadTokens":1868668,"cost":2.94551415},{"modelName":"claude-haiku-4-5-20251001","inputTokens":97681,"outputTokens":3640,"cacheCreationTokens":242013,"cacheReadTokens":179370,"cost":0.43633425000000003}]},{"date":"2026-04-14","inputTokens":14,"outputTokens":1667,"cacheCreationTokens":514099,"cacheReadTokens":212068,"totalTokens":727848,"totalCost":2.0165386499999998,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":14,"outputTokens":1667,"cacheCreationTokens":514099,"cacheReadTokens":212068,"cost":2.0165386499999998}]},{"date":"2026-04-15","inputTokens":9,"outputTokens":4234,"cacheCreationTokens":209853,"cacheReadTokens":893135,"totalTokens":1107231,"totalCost":1.1184262499999997,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":9,"outputTokens":4234,"cacheCreationTokens":209853,"cacheReadTokens":893135,"cost":1.1184262499999997}]},{"date":"2026-04-17","inputTokens":20,"outputTokens":2103,"cacheCreationTokens":17686,"cacheReadTokens":191020,"totalTokens":210829,"totalCost":0.15523350000000002,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":20,"outputTokens":2103,"cacheCreationTokens":17686,"cacheReadTokens":191020,"cost":0.15523350000000002}]},{"date":"2026-04-21","inputTokens":80,"outputTokens":8706,"cacheCreationTokens":85602,"cacheReadTokens":832464,"totalTokens":926852,"totalCost":0.7015766999999998,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":80,"outputTokens":8706,"cacheCreationTokens":85602,"cacheReadTokens":832464,"cost":0.7015766999999998}]},{"date":"2026-04-22","inputTokens":166645,"outputTokens":322824,"cacheCreationTokens":4727238,"cacheReadTokens":39441236,"totalTokens":44657943,"totalCost":34.401011300000036,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162639,"outputTokens":317398,"cacheCreationTokens":4567684,"cacheReadTokens":39243036,"cost":34.15061280000002},{"modelName":"claude-haiku-4-5-20251001","inputTokens":4006,"outputTokens":5426,"cacheCreationTokens":159554,"cacheReadTokens":198200,"cost":0.25039849999999997}]},{"date":"2026-04-23","inputTokens":401,"outputTokens":99360,"cacheCreationTokens":1600012,"cacheReadTokens":15967032,"totalTokens":17666805,"totalCost":12.28175759999999,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":401,"outputTokens":99360,"cacheCreationTokens":1600012,"cacheReadTokens":15967032,"cost":12.28175759999999}]}],"totals":{"inputTokens":264940,"outputTokens":457577,"cacheCreationTokens":7972236,"cacheReadTokens":59584993,"totalCost":54.05639240000003,"totalTokens":68279746}},"weekly":{"weekly":[{"week":"2026-04-05","inputTokens":97771,"outputTokens":18683,"cacheCreationTokens":817746,"cacheReadTokens":2048038,"totalTokens":2982238,"totalCost":3.3818484000000004,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":90,"outputTokens":15043,"cacheCreationTokens":575733,"cacheReadTokens":1868668,"cost":2.94551415},{"modelName":"claude-haiku-4-5-20251001","inputTokens":97681,"outputTokens":3640,"cacheCreationTokens":242013,"cacheReadTokens":179370,"cost":0.43633425000000003}]},{"week":"2026-04-12","inputTokens":43,"outputTokens":8004,"cacheCreationTokens":741638,"cacheReadTokens":1296223,"totalTokens":2045908,"totalCost":3.2901983999999995,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":43,"outputTokens":8004,"cacheCreationTokens":741638,"cacheReadTokens":1296223,"cost":3.2901983999999995}]},{"week":"2026-04-19","inputTokens":167126,"outputTokens":430890,"cacheCreationTokens":6412852,"cacheReadTokens":56240732,"totalTokens":63251600,"totalCost":47.384345600000024,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":163120,"outputTokens":425464,"cacheCreationTokens":6253298,"cacheReadTokens":56042532,"cost":47.13394710000001},{"modelName":"claude-haiku-4-5-20251001","inputTokens":4006,"outputTokens":5426,"cacheCreationTokens":159554,"cacheReadTokens":198200,"cost":0.25039849999999997}]}],"totals":{"inputTokens":264940,"outputTokens":457577,"cacheCreationTokens":7972236,"cacheReadTokens":59584993,"totalCost":54.05639240000002,"totalTokens":68279746}},"monthly":{"monthly":[{"month":"2026-04","inputTokens":264940,"outputTokens":457577,"cacheCreationTokens":7972236,"cacheReadTokens":59584993,"totalTokens":68279746,"totalCost":54.05639240000003,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":163253,"outputTokens":448511,"cacheCreationTokens":7570669,"cacheReadTokens":59207423,"cost":53.36965965000001},{"modelName":"claude-haiku-4-5-20251001","inputTokens":101687,"outputTokens":9066,"cacheCreationTokens":401567,"cacheReadTokens":377570,"cost":0.68673275}]}],"totals":{"inputTokens":264940,"outputTokens":457577,"cacheCreationTokens":7972236,"cacheReadTokens":59584993,"totalCost":54.05639240000003,"totalTokens":68279746}},"generatedAt":"2026-04-23T08:58:04.340Z","period":{"since":"20260124","until":"20260423"}};</script>
 </head>
 <body>
 
@@ -139,6 +154,15 @@
   </div>
 </header>
 <div class="snapshot-bar" id="snapshotBar">📸 快照模式 — 数据截至 <span id="snapshotTime"></span>，重新运行 <code>node export.js</code> 可更新</div>
+
+<!-- Account selector bar -->
+<div class="account-bar" id="accountBar">
+  <button class="acc-btn active" data-id="__local__" onclick="selectAccount('__local__')">💻 本机</button>
+  <div class="acc-sep"></div>
+  <span id="remoteAccBtns"></span>
+  <div class="acc-sep"></div>
+  <button class="acc-btn all-btn" data-id="__all__" onclick="selectAccount('__all__')">📊 全部汇总</button>
+</div>
 
 <main class="main">
 
@@ -216,11 +240,196 @@
     <div id="monthlyContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
   </div>
 
+  <!-- Accounts overview (visible in All mode) -->
+  <div class="section" id="accountsOverview">
+    <div class="section-header">
+      <div class="section-title"><span class="dot" style="background:var(--green)"></span>账号总览</div>
+      <span class="section-badge" id="accountCount">-</span>
+    </div>
+    <div id="accountsContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
+  </div>
+
 </main>
 
 <script>
 // ── Static mode (window.__CCUSAGE_DATA__ injected by export.js) ───────────────
 const __STATIC = window.__CCUSAGE_DATA__ || null;
+
+// ── Multi-account state ───────────────────────────────────────────────────────
+let currentAccount = '__local__';
+let remoteAccounts = [];   // [{accountId, displayName, lastUpdated, ...}]
+let remoteAccountData = {}; // { accountId: fullData }
+
+// Select account tab
+function selectAccount(id) {
+  currentAccount = id;
+  document.querySelectorAll('.acc-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.id === id);
+  });
+  document.getElementById('accountsOverview').style.display = id === '__all__' ? 'block' : 'none';
+  loadAll();
+}
+
+// Load list of remote accounts and render tab buttons
+async function loadAccountBar() {
+  if (__STATIC) return; // static mode: no remote accounts
+  try {
+    remoteAccounts = await api('/api/accounts');
+    const container = document.getElementById('remoteAccBtns');
+    if (!remoteAccounts.length) { container.innerHTML = ''; return; }
+
+    container.innerHTML = remoteAccounts.map(acc => {
+      const stale = acc.lastUpdated && (Date.now() - new Date(acc.lastUpdated)) > 2 * 3600 * 1000;
+      const dot = `<span class="acc-status ${stale ? 'acc-stale' : 'acc-online'}"></span>`;
+      return `<button class="acc-btn" data-id="${acc.accountId}" onclick="selectAccount('${acc.accountId}')">${dot}${acc.displayName}</button>`;
+    }).join('');
+
+    document.getElementById('accountCount').textContent = `${remoteAccounts.length} 台`;
+  } catch {}
+}
+
+// Load full data for a specific remote account
+async function getRemoteData(accountId) {
+  if (remoteAccountData[accountId]) return remoteAccountData[accountId];
+  const d = await api(`/api/account/${accountId}`);
+  remoteAccountData[accountId] = d;
+  return d;
+}
+
+// Merge multiple account datasets into one (for "All" view)
+function mergeAccounts(dataList) {
+  function sumTotals(list, key) {
+    const result = {};
+    for (const d of list) {
+      const t = d?.[key]?.totals || {};
+      for (const k of Object.keys(t)) {
+        result[k] = (result[k] || 0) + (t[k] || 0);
+      }
+    }
+    return result;
+  }
+  function mergeDailyArr(list) {
+    const map = {};
+    for (const d of list) {
+      for (const day of (d?.daily?.daily || [])) {
+        if (!map[day.date]) map[day.date] = { ...day, totalCost: 0, inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, modelBreakdowns: [] };
+        map[day.date].totalCost += day.totalCost || 0;
+        map[day.date].inputTokens += day.inputTokens || 0;
+        map[day.date].outputTokens += day.outputTokens || 0;
+        map[day.date].cacheCreationTokens += day.cacheCreationTokens || 0;
+        map[day.date].cacheReadTokens += day.cacheReadTokens || 0;
+        map[day.date].totalTokens += day.totalTokens || 0;
+      }
+    }
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  function mergeWeeklyArr(list) {
+    const map = {};
+    for (const d of list) {
+      for (const w of (d?.weekly?.weekly || [])) {
+        if (!map[w.week]) map[w.week] = { ...w, totalCost: 0, inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, modelsUsed: [] };
+        map[w.week].totalCost += w.totalCost || 0;
+        map[w.week].inputTokens += w.inputTokens || 0;
+        map[w.week].outputTokens += w.outputTokens || 0;
+        map[w.week].cacheCreationTokens += w.cacheCreationTokens || 0;
+        map[w.week].cacheReadTokens += w.cacheReadTokens || 0;
+        map[w.week].totalTokens += w.totalTokens || 0;
+        (w.modelsUsed || []).forEach(m => { if (!map[w.week].modelsUsed.includes(m)) map[w.week].modelsUsed.push(m); });
+      }
+    }
+    return Object.values(map).sort((a, b) => a.week.localeCompare(b.week));
+  }
+  function mergeMonthlyArr(list) {
+    const map = {};
+    for (const d of list) {
+      for (const m of (d?.monthly?.monthly || [])) {
+        if (!map[m.month]) map[m.month] = { ...m, totalCost: 0, inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, modelsUsed: [] };
+        map[m.month].totalCost += m.totalCost || 0;
+        map[m.month].inputTokens += m.inputTokens || 0;
+        map[m.month].outputTokens += m.outputTokens || 0;
+        map[m.month].cacheCreationTokens += m.cacheCreationTokens || 0;
+        map[m.month].cacheReadTokens += m.cacheReadTokens || 0;
+        map[m.month].totalTokens += m.totalTokens || 0;
+        (m.modelsUsed || []).forEach(mo => { if (!map[m.month].modelsUsed.includes(mo)) map[m.month].modelsUsed.push(mo); });
+      }
+    }
+    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
+  }
+
+  const todayTotals = sumTotals(dataList, 'today');
+  const todayBreakdowns = dataList.flatMap(d => (d?.today?.daily?.[0]?.modelBreakdowns || []));
+  const dailyArr = mergeDailyArr(dataList);
+  const weeklyArr = mergeWeeklyArr(dataList);
+  const monthlyArr = mergeMonthlyArr(dataList);
+
+  const calcTotals = (arr) => arr.reduce((t, r) => ({
+    inputTokens: (t.inputTokens || 0) + r.inputTokens,
+    outputTokens: (t.outputTokens || 0) + r.outputTokens,
+    cacheCreationTokens: (t.cacheCreationTokens || 0) + r.cacheCreationTokens,
+    cacheReadTokens: (t.cacheReadTokens || 0) + r.cacheReadTokens,
+    totalTokens: (t.totalTokens || 0) + r.totalTokens,
+    totalCost: (t.totalCost || 0) + r.totalCost,
+  }), {});
+
+  return {
+    today: { daily: [{ totals: todayTotals, modelBreakdowns: todayBreakdowns }], totals: todayTotals },
+    daily: { daily: dailyArr, totals: calcTotals(dailyArr) },
+    weekly: { weekly: weeklyArr, totals: calcTotals(weeklyArr) },
+    monthly: { monthly: monthlyArr, totals: calcTotals(monthlyArr) },
+  };
+}
+
+// Get data based on current account selection
+async function getDataForCurrentAccount() {
+  if (__STATIC) return __STATIC;
+  if (currentAccount === '__local__') return null; // use individual API calls
+  if (currentAccount === '__all__') {
+    // Local data
+    const today_t = today();
+    const [localToday, localDaily, localWeekly, localMonthly] = await Promise.all([
+      api(`/api/today`),
+      api(`/api/daily?since=${isoToYMD(document.getElementById('sinceDate').value)}&until=${isoToYMD(document.getElementById('untilDate').value)}`),
+      api('/api/weekly'),
+      api('/api/monthly'),
+    ]);
+    const localData = { today: localToday, daily: localDaily, weekly: localWeekly, monthly: localMonthly };
+    // Remote data
+    const remoteDatas = await Promise.all(remoteAccounts.map(acc => getRemoteData(acc.accountId)));
+    return mergeAccounts([localData, ...remoteDatas]);
+  }
+  // Single remote account
+  return await getRemoteData(currentAccount);
+}
+
+// Render accounts overview table
+function renderAccountsOverview(accounts) {
+  const el = document.getElementById('accountsContent');
+  if (!accounts.length) { el.innerHTML = '<div class="empty">暂无远端账号上报数据</div>'; return; }
+  const rows = accounts.map(a => {
+    const stale = a.lastUpdated && (Date.now() - new Date(a.lastUpdated)) > 2 * 3600 * 1000;
+    const age = a.lastUpdated ? timeAgo(new Date(a.lastUpdated)) : '从未';
+    const dot = `<span class="acc-status ${stale ? 'acc-stale' : 'acc-online'}" style="display:inline-block"></span>`;
+    return `<tr>
+      <td>${dot} <strong>${a.displayName}</strong> <span style="color:var(--text3);font-size:11px">${a.accountId}</span></td>
+      <td class="cost-val">${fmtCost(a.todayCost)}</td>
+      <td>${fmt(a.todayTokens)}</td>
+      <td class="cost-val">${fmtCost(a.monthCost)}</td>
+      <td>${fmt(a.monthTokens)}</td>
+      <td style="color:${stale ? 'var(--amber)' : 'var(--text3)'}">${age}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<div class="table-scroll"><table>
+    <thead><tr><th>账号</th><th>今日Cost</th><th>今日Tokens</th><th>本月Cost</th><th>本月Tokens</th><th>最后上报</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function timeAgo(date) {
+  const mins = Math.floor((Date.now() - date) / 60000);
+  if (mins < 60) return `${mins} 分钟前`;
+  if (mins < 1440) return `${Math.floor(mins / 60)} 小时前`;
+  return `${Math.floor(mins / 1440)} 天前`;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -331,8 +540,16 @@ async function loadDaily() {
     if (__STATIC) {
       const allDays = (__STATIC.daily || {}).daily || [];
       data = { daily: allDays.filter(d => d.date >= sinceVal && d.date <= untilVal) };
-    } else {
+    } else if (currentAccount === '__local__') {
       data = await api(`/api/daily?since=${isoToYMD(sinceVal)}&until=${isoToYMD(untilVal)}`);
+    } else if (currentAccount === '__all__') {
+      const localDaily = await api(`/api/daily?since=${isoToYMD(sinceVal)}&until=${isoToYMD(untilVal)}`);
+      const remoteDatas = await Promise.all(remoteAccounts.map(acc => getRemoteData(acc.accountId)));
+      const merged = mergeAccounts([{ daily: localDaily }, ...remoteDatas]);
+      data = { daily: (merged.daily.daily || []).filter(d => d.date >= sinceVal && d.date <= untilVal) };
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = { daily: (remote?.daily?.daily || []).filter(d => d.date >= sinceVal && d.date <= untilVal) };
     }
     renderDailyChart(data.daily || []);
   } catch (e) {
@@ -342,7 +559,16 @@ async function loadDaily() {
 
 async function loadToday() {
   try {
-    const data = __STATIC ? __STATIC.today : await api('/api/today');
+    let data;
+    if (__STATIC) data = __STATIC.today;
+    else if (currentAccount === '__local__') data = await api('/api/today');
+    else if (currentAccount === '__all__') {
+      const [localToday, ...remotes] = await Promise.all([api('/api/today'), ...remoteAccounts.map(a => getRemoteData(a.accountId))]);
+      data = mergeAccounts([{ today: localToday }, ...remotes]).today;
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = remote?.today || {};
+    }
     const t = data.totals || {};
     const day = (data.daily || [])[0];
 
@@ -362,7 +588,16 @@ async function loadToday() {
 async function loadWeekly() {
   const el = document.getElementById('weeklyContent');
   try {
-    const data = __STATIC ? __STATIC.weekly : await api('/api/weekly');
+    let data;
+    if (__STATIC) data = __STATIC.weekly;
+    else if (currentAccount === '__local__') data = await api('/api/weekly');
+    else if (currentAccount === '__all__') {
+      const [localW, ...remotes] = await Promise.all([api('/api/weekly'), ...remoteAccounts.map(a => getRemoteData(a.accountId))]);
+      data = mergeAccounts([{ weekly: localW }, ...remotes]).weekly;
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = remote?.weekly || {};
+    }
     const weeks = data.weekly || [];
     const tot = data.totals || {};
     if (!weeks.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
@@ -391,7 +626,16 @@ async function loadWeekly() {
 async function loadMonthly() {
   const el = document.getElementById('monthlyContent');
   try {
-    const data = __STATIC ? __STATIC.monthly : await api('/api/monthly');
+    let data;
+    if (__STATIC) data = __STATIC.monthly;
+    else if (currentAccount === '__local__') data = await api('/api/monthly');
+    else if (currentAccount === '__all__') {
+      const [localM, ...remotes] = await Promise.all([api('/api/monthly'), ...remoteAccounts.map(a => getRemoteData(a.accountId))]);
+      data = mergeAccounts([{ monthly: localM }, ...remotes]).monthly;
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = remote?.monthly || {};
+    }
     const months = data.monthly || [];
     const tot = data.totals || {};
 
@@ -486,7 +730,12 @@ function setRefreshing(v) {
 }
 
 async function loadAll(showSpin = false) {
-  if (showSpin) setRefreshing(true);
+  if (showSpin) { setRefreshing(true); remoteAccountData = {}; } // clear cache on manual refresh
+  // Refresh account bar + overview in all mode
+  if (!__STATIC) {
+    await loadAccountBar();
+    if (currentAccount === '__all__') renderAccountsOverview(remoteAccounts);
+  }
   await Promise.all([loadToday(), loadMonthly(), loadWeekly(), loadDaily()]);
   if (__STATIC) {
     document.getElementById('lastUpdated').textContent = '快照: ' + new Date(__STATIC.generatedAt).toLocaleString('zh-CN');
@@ -503,7 +752,10 @@ async function loadAll(showSpin = false) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 initDateInputs();
 loadAll();
-if (!__STATIC) setInterval(loadToday, 5 * 60 * 1000);
+if (!__STATIC) {
+  setInterval(loadToday, 5 * 60 * 1000);
+  setInterval(loadAccountBar, 2 * 60 * 1000); // refresh account list every 2 min
+}
 </script>
 </body>
 </html>
