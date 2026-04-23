@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code Usage Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080d18; --surface: #0f172a; --card: #1a2236;
+      --border: #263047; --text: #e2e8f0; --text2: #94a3b8; --text3: #4a5568;
+      --blue: #60a5fa; --green: #34d399; --purple: #a78bfa;
+      --amber: #fbbf24; --orange: #fb923c; --red: #f87171;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; min-height: 100vh; font-size: 14px; }
+
+    /* ── Header ── */
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; gap: 12px; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .header h1 span { color: var(--blue); }
+    .badge { font-size: 10px; padding: 2px 7px; border-radius: 9999px; background: rgba(96,165,250,.12); color: var(--blue); border: 1px solid rgba(96,165,250,.25); font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .last-updated { font-size: 12px; color: var(--text3); }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text2); transition: all .15s; }
+    .btn:hover { border-color: #3a4a62; color: var(--text); background: #223; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn.primary { background: var(--blue); border-color: var(--blue); color: #060d1a; font-weight: 600; }
+    .btn.primary:hover { background: #93c5fd; border-color: #93c5fd; }
+    .btn-sm { padding: 4px 9px; font-size: 11px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { animation: spin .8s linear infinite; }
+
+    /* ── Layout ── */
+    .main { max-width: 1380px; margin: 0 auto; padding: 22px 24px; }
+
+    /* ── Stat cards ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 11px; padding: 18px 20px; position: relative; overflow: hidden; }
+    .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .stat-card.c-blue::after { background: linear-gradient(90deg, var(--blue), #818cf8); }
+    .stat-card.c-green::after { background: linear-gradient(90deg, var(--green), #06b6d4); }
+    .stat-card.c-purple::after { background: linear-gradient(90deg, var(--purple), #ec4899); }
+    .stat-card.c-amber::after { background: linear-gradient(90deg, var(--amber), var(--orange)); }
+    .stat-icon { font-size: 18px; margin-bottom: 10px; }
+    .stat-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .stat-value { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 5px; letter-spacing: -1px; }
+    .stat-card.c-blue .stat-value { color: var(--blue); }
+    .stat-card.c-green .stat-value { color: var(--green); }
+    .stat-card.c-purple .stat-value { color: var(--purple); }
+    .stat-card.c-amber .stat-value { color: var(--amber); }
+    .stat-sub { font-size: 11px; color: var(--text3); }
+
+    /* ── Section card ── */
+    .section { background: var(--card); border: 1px solid var(--border); border-radius: 11px; padding: 18px 20px; margin-bottom: 18px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    .section-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-blue { background: var(--blue); } .dot-green { background: var(--green); }
+    .dot-purple { background: var(--purple); } .dot-amber { background: var(--amber); }
+    .section-badge { font-size: 11px; color: var(--text3); background: var(--surface); padding: 2px 8px; border-radius: 5px; border: 1px solid var(--border); }
+
+    /* ── Date range ── */
+    .date-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    input[type="date"] { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; color: var(--text); font-size: 12px; cursor: pointer; outline: none; }
+    input[type="date"]:focus { border-color: var(--blue); }
+    .sep { color: var(--text3); font-size: 12px; }
+
+    /* ── Chart ── */
+    .chart-wrap { position: relative; height: 270px; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .legend-dot.round { border-radius: 50%; }
+
+    /* ── Two column ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    @media (max-width: 780px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── Table ── */
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { padding: 7px 12px; text-align: right; color: var(--text3); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th:first-child { text-align: left; }
+    td { padding: 9px 12px; text-align: right; border-bottom: 1px solid rgba(38,48,71,.6); color: var(--text2); white-space: nowrap; }
+    td:first-child { text-align: left; color: var(--text); font-weight: 500; }
+    tr:last-child td { border-bottom: none; font-weight: 700; color: var(--text); }
+    tr:last-child td:first-child { color: var(--text3); }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .cost-val { color: var(--orange) !important; font-weight: 600; }
+    .total-row td { background: rgba(96,165,250,.04); border-top: 1px solid var(--border); }
+
+    /* ── Model tags ── */
+    .mtag { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; margin: 1px; }
+    .mt-sonnet { background: rgba(96,165,250,.15); color: var(--blue); }
+    .mt-haiku  { background: rgba(52,211,153,.15); color: var(--green); }
+    .mt-opus   { background: rgba(167,139,250,.15); color: var(--purple); }
+
+    /* ── Model breakdown bars ── */
+    .model-item { margin-bottom: 14px; }
+    .model-item:last-child { margin-bottom: 0; }
+    .model-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .model-bar-bg { height: 7px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+    .model-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 2px; }
+    .model-detail { font-size: 11px; color: var(--text3); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* ── States ── */
+    .loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 36px; color: var(--text3); font-size: 12px; }
+    .empty { text-align: center; padding: 30px; color: var(--text3); font-size: 12px; }
+    .error { text-align: center; padding: 20px; color: var(--red); font-size: 12px; }
+    .snapshot-bar { background: rgba(251,191,36,.1); border-bottom: 1px solid rgba(251,191,36,.25); padding: 6px 24px; font-size: 12px; color: var(--amber); text-align: center; display: none; }
+    .snapshot-bar.show { display: block; }
+  </style>
+<script>window.__CCUSAGE_DATA__ = {"today":{"daily":[{"date":"2026-04-23","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"totalTokens":3500695,"totalCost":2.750648699999999,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"cost":2.750648699999999}]}],"totals":{"inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"totalCost":2.750648699999999,"totalTokens":3500695}},"daily":{"daily":[{"date":"2026-04-09","inputTokens":97771,"outputTokens":18683,"cacheCreationTokens":817746,"cacheReadTokens":2048038,"totalTokens":2982238,"totalCost":3.3818484000000004,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":90,"outputTokens":15043,"cacheCreationTokens":575733,"cacheReadTokens":1868668,"cost":2.94551415},{"modelName":"claude-haiku-4-5-20251001","inputTokens":97681,"outputTokens":3640,"cacheCreationTokens":242013,"cacheReadTokens":179370,"cost":0.43633425000000003}]},{"date":"2026-04-14","inputTokens":14,"outputTokens":1667,"cacheCreationTokens":514099,"cacheReadTokens":212068,"totalTokens":727848,"totalCost":2.0165386499999998,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":14,"outputTokens":1667,"cacheCreationTokens":514099,"cacheReadTokens":212068,"cost":2.0165386499999998}]},{"date":"2026-04-15","inputTokens":9,"outputTokens":4234,"cacheCreationTokens":209853,"cacheReadTokens":893135,"totalTokens":1107231,"totalCost":1.1184262499999997,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":9,"outputTokens":4234,"cacheCreationTokens":209853,"cacheReadTokens":893135,"cost":1.1184262499999997}]},{"date":"2026-04-17","inputTokens":20,"outputTokens":2103,"cacheCreationTokens":17686,"cacheReadTokens":191020,"totalTokens":210829,"totalCost":0.15523350000000002,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":20,"outputTokens":2103,"cacheCreationTokens":17686,"cacheReadTokens":191020,"cost":0.15523350000000002}]},{"date":"2026-04-21","inputTokens":80,"outputTokens":8706,"cacheCreationTokens":85602,"cacheReadTokens":832464,"totalTokens":926852,"totalCost":0.7015766999999998,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":80,"outputTokens":8706,"cacheCreationTokens":85602,"cacheReadTokens":832464,"cost":0.7015766999999998}]},{"date":"2026-04-22","inputTokens":166645,"outputTokens":322824,"cacheCreationTokens":4727238,"cacheReadTokens":39441236,"totalTokens":44657943,"totalCost":34.401011300000036,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162639,"outputTokens":317398,"cacheCreationTokens":4567684,"cacheReadTokens":39243036,"cost":34.15061280000002},{"modelName":"claude-haiku-4-5-20251001","inputTokens":4006,"outputTokens":5426,"cacheCreationTokens":159554,"cacheReadTokens":198200,"cost":0.25039849999999997}]},{"date":"2026-04-23","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"totalTokens":3500695,"totalCost":2.750648699999999,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":85,"outputTokens":53677,"cacheCreationTokens":264104,"cacheReadTokens":3182829,"cost":2.750648699999999}]}],"totals":{"inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalCost":44.525283500000036,"totalTokens":54113636}},"weekly":{"weekly":[{"week":"2026-04-05","inputTokens":97771,"outputTokens":18683,"cacheCreationTokens":817746,"cacheReadTokens":2048038,"totalTokens":2982238,"totalCost":3.3818484000000004,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":90,"outputTokens":15043,"cacheCreationTokens":575733,"cacheReadTokens":1868668,"cost":2.94551415},{"modelName":"claude-haiku-4-5-20251001","inputTokens":97681,"outputTokens":3640,"cacheCreationTokens":242013,"cacheReadTokens":179370,"cost":0.43633425000000003}]},{"week":"2026-04-12","inputTokens":43,"outputTokens":8004,"cacheCreationTokens":741638,"cacheReadTokens":1296223,"totalTokens":2045908,"totalCost":3.2901983999999995,"modelsUsed":["claude-sonnet-4-6"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":43,"outputTokens":8004,"cacheCreationTokens":741638,"cacheReadTokens":1296223,"cost":3.2901983999999995}]},{"week":"2026-04-19","inputTokens":166810,"outputTokens":385207,"cacheCreationTokens":5076944,"cacheReadTokens":43456529,"totalTokens":49085490,"totalCost":37.85323670000003,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162804,"outputTokens":379781,"cacheCreationTokens":4917390,"cacheReadTokens":43258329,"cost":37.602838200000015},{"modelName":"claude-haiku-4-5-20251001","inputTokens":4006,"outputTokens":5426,"cacheCreationTokens":159554,"cacheReadTokens":198200,"cost":0.25039849999999997}]}],"totals":{"inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalCost":44.52528350000003,"totalTokens":54113636}},"monthly":{"monthly":[{"month":"2026-04","inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalTokens":54113636,"totalCost":44.525283500000036,"modelsUsed":["claude-sonnet-4-6","claude-haiku-4-5-20251001"],"modelBreakdowns":[{"modelName":"claude-sonnet-4-6","inputTokens":162937,"outputTokens":402828,"cacheCreationTokens":6234761,"cacheReadTokens":46423220,"cost":43.83855075000002},{"modelName":"claude-haiku-4-5-20251001","inputTokens":101687,"outputTokens":9066,"cacheCreationTokens":401567,"cacheReadTokens":377570,"cost":0.68673275}]}],"totals":{"inputTokens":264624,"outputTokens":411894,"cacheCreationTokens":6636328,"cacheReadTokens":46800790,"totalCost":44.525283500000036,"totalTokens":54113636}},"generatedAt":"2026-04-23T07:32:01.325Z","period":{"since":"20260124","until":"20260423"}};</script>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <h1>Claude Code <span>Usage</span> Dashboard</h1>
+    <span class="badge">ccusage</span>
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated">-</span>
+    <button class="btn primary" id="refreshBtn" onclick="loadAll(true)">
+      <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/>
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+        <path d="M3 21v-5h5"/>
+      </svg>
+      刷新
+    </button>
+  </div>
+</header>
+<div class="snapshot-bar" id="snapshotBar">📸 快照模式 — 数据截至 <span id="snapshotTime"></span>，重新运行 <code>node export.js</code> 可更新</div>
+
+<main class="main">
+
+  <!-- Stat cards -->
+  <div class="stats-grid">
+    <div class="stat-card c-blue">
+      <div class="stat-label">今日消费</div>
+      <div class="stat-value" id="todayCost">—</div>
+      <div class="stat-sub" id="todayCostSub">加载中…</div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-label">今日 Tokens</div>
+      <div class="stat-value" id="todayTokens">—</div>
+      <div class="stat-sub" id="todayTokensSub">加载中…</div>
+    </div>
+    <div class="stat-card c-purple">
+      <div class="stat-label">本月消费</div>
+      <div class="stat-value" id="monthCost">—</div>
+      <div class="stat-sub" id="monthCostSub">加载中…</div>
+    </div>
+    <div class="stat-card c-amber">
+      <div class="stat-label">本月 Tokens</div>
+      <div class="stat-value" id="monthTokens">—</div>
+      <div class="stat-sub" id="monthTokensSub">加载中…</div>
+    </div>
+  </div>
+
+  <!-- Daily chart -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="dot dot-blue"></span>每日用量</div>
+      <div class="date-row">
+        <input type="date" id="sinceDate">
+        <span class="sep">→</span>
+        <input type="date" id="untilDate">
+        <button class="btn btn-sm" onclick="applyRange()">应用</button>
+        <button class="btn btn-sm" onclick="setLast30()">近30天</button>
+        <button class="btn btn-sm" onclick="setThisMonth()">本月</button>
+      </div>
+    </div>
+    <div class="chart-wrap" id="dailyChartWrap">
+      <div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Cache Read</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Cache Create</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Output</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Input</div>
+      <div class="legend-item"><div class="legend-dot round" style="background:#f97316"></div>Cost ($，右轴)</div>
+    </div>
+  </div>
+
+  <!-- Weekly + Model breakdown -->
+  <div class="two-col">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="dot dot-green"></span>按周汇总</div>
+      </div>
+      <div id="weeklyContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="dot dot-purple"></span>模型用量分布</div>
+        <span class="section-badge" id="modelPeriod">今日</span>
+      </div>
+      <div id="modelContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
+    </div>
+  </div>
+
+  <!-- Monthly -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="dot dot-amber"></span>按月汇总</div>
+    </div>
+    <div id="monthlyContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
+  </div>
+
+</main>
+
+<script>
+// ── Static mode (window.__CCUSAGE_DATA__ injected by export.js) ───────────────
+const __STATIC = window.__CCUSAGE_DATA__ || null;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n) return '0';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+function fmtCost(n) { return n ? '$' + n.toFixed(2) : '$0.00'; }
+function fmtDate(s) { return s ? s.slice(5) : ''; } // "2026-04-23" → "04-23"
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function isoToYMD(s) { return s.replace(/-/g, ''); }
+function daysAgoISO(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
+function firstOfMonthISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+
+function modelShort(name) {
+  if (!name) return name;
+  const n = name.toLowerCase();
+  if (n.includes('opus'))   return 'Opus';
+  if (n.includes('sonnet')) return 'Sonnet';
+  if (n.includes('haiku'))  return 'Haiku';
+  return name.split('-').slice(-2).join('-');
+}
+function modelTag(name) {
+  const short = modelShort(name);
+  const cls = short === 'Opus' ? 'mt-opus' : short === 'Haiku' ? 'mt-haiku' : 'mt-sonnet';
+  return `<span class="mtag ${cls}">${short}</span>`;
+}
+function modelColor(name) {
+  if (!name) return '#94a3b8';
+  const n = name.toLowerCase();
+  if (n.includes('opus'))   return '#a78bfa';
+  if (n.includes('sonnet')) return '#60a5fa';
+  if (n.includes('haiku'))  return '#34d399';
+  return '#94a3b8';
+}
+
+const spinner = `<div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div>`;
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+let dailyChart = null;
+
+function renderDailyChart(days) {
+  const wrap = document.getElementById('dailyChartWrap');
+  if (!days || days.length === 0) { wrap.innerHTML = '<div class="empty">该时间段内无数据</div>'; return; }
+
+  wrap.innerHTML = '<canvas id="dailyCanvas"></canvas>';
+  const labels  = days.map(d => fmtDate(d.date));
+  const costArr = days.map(d => +(d.totalCost || 0).toFixed(4));
+
+  if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
+  dailyChart = new Chart(document.getElementById('dailyCanvas').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Input',        data: days.map(d => d.inputTokens || 0),        backgroundColor: '#f59e0b', stack: 't', order: 2 },
+        { label: 'Output',       data: days.map(d => d.outputTokens || 0),       backgroundColor: '#10b981', stack: 't', order: 2 },
+        { label: 'Cache Create', data: days.map(d => d.cacheCreationTokens || 0), backgroundColor: '#8b5cf6', stack: 't', order: 2 },
+        { label: 'Cache Read',   data: days.map(d => d.cacheReadTokens || 0),    backgroundColor: '#3b82f6', stack: 't', order: 2 },
+        {
+          label: 'Cost ($)', data: costArr, type: 'line',
+          borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,.1)',
+          fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 6,
+          borderWidth: 2, yAxisID: 'y2', order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a2236', borderColor: '#263047', borderWidth: 1,
+          titleColor: '#e2e8f0', bodyColor: '#94a3b8', padding: 12,
+          callbacks: {
+            label: (ctx) => ctx.dataset.label === 'Cost ($)'
+              ? ` Cost: $${ctx.raw.toFixed(4)}`
+              : ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(38,48,71,.5)' }, ticks: { color: '#4a5568', font: { size: 11 }, maxTicksLimit: 12, maxRotation: 45 } },
+        y: { stacked: true, grid: { color: 'rgba(38,48,71,.5)' }, ticks: { color: '#4a5568', font: { size: 11 }, callback: v => fmt(v) } },
+        y2: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#f97316', font: { size: 11 }, callback: v => '$' + v.toFixed(2) } }
+      }
+    }
+  });
+}
+
+// ── Load sections ─────────────────────────────────────────────────────────────
+async function loadDaily() {
+  const sinceVal = document.getElementById('sinceDate').value;
+  const untilVal = document.getElementById('untilDate').value;
+  document.getElementById('dailyChartWrap').innerHTML = spinner;
+  try {
+    let data;
+    if (__STATIC) {
+      const allDays = (__STATIC.daily || {}).daily || [];
+      data = { daily: allDays.filter(d => d.date >= sinceVal && d.date <= untilVal) };
+    } else {
+      data = await api(`/api/daily?since=${isoToYMD(sinceVal)}&until=${isoToYMD(untilVal)}`);
+    }
+    renderDailyChart(data.daily || []);
+  } catch (e) {
+    document.getElementById('dailyChartWrap').innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function loadToday() {
+  try {
+    const data = __STATIC ? __STATIC.today : await api('/api/today');
+    const t = data.totals || {};
+    const day = (data.daily || [])[0];
+
+    document.getElementById('todayCost').textContent     = fmtCost(t.totalCost);
+    document.getElementById('todayTokens').textContent   = fmt(t.totalTokens || 0);
+    document.getElementById('todayCostSub').textContent  = t.totalCost ? `Input ${fmt(t.inputTokens)} / Out ${fmt(t.outputTokens)}` : '今日暂无数据';
+    document.getElementById('todayTokensSub').textContent = t.totalCost
+      ? `CR: ${fmt(t.cacheReadTokens)} / CC: ${fmt(t.cacheCreationTokens)}`
+      : '—';
+
+    renderModelBreakdown(day ? (day.modelBreakdowns || []) : [], '今日');
+  } catch (e) {
+    ['todayCost','todayTokens'].forEach(id => document.getElementById(id).textContent = 'Err');
+  }
+}
+
+async function loadWeekly() {
+  const el = document.getElementById('weeklyContent');
+  try {
+    const data = __STATIC ? __STATIC.weekly : await api('/api/weekly');
+    const weeks = data.weekly || [];
+    const tot = data.totals || {};
+    if (!weeks.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+
+    const rows = weeks.map(w => `
+      <tr>
+        <td>${fmtDate(w.week)}</td>
+        <td>${fmt(w.inputTokens)}</td>
+        <td>${fmt(w.outputTokens)}</td>
+        <td>${fmt(w.cacheReadTokens)}</td>
+        <td>${fmt(w.totalTokens)}</td>
+        <td class="cost-val">${fmtCost(w.totalCost)}</td>
+        <td>${(w.modelsUsed || []).map(modelTag).join('')}</td>
+      </tr>`).join('');
+    const totalRow = `<tr class="total-row"><td>合计</td><td>${fmt(tot.inputTokens)}</td><td>${fmt(tot.outputTokens)}</td><td>${fmt(tot.cacheReadTokens)}</td><td>${fmt(tot.totalTokens)}</td><td class="cost-val">${fmtCost(tot.totalCost)}</td><td></td></tr>`;
+
+    el.innerHTML = `<div class="table-scroll"><table>
+      <thead><tr><th>周起始</th><th>Input</th><th>Output</th><th>Cache Read</th><th>Total</th><th>Cost</th><th>模型</th></tr></thead>
+      <tbody>${rows}${totalRow}</tbody>
+    </table></div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function loadMonthly() {
+  const el = document.getElementById('monthlyContent');
+  try {
+    const data = __STATIC ? __STATIC.monthly : await api('/api/monthly');
+    const months = data.monthly || [];
+    const tot = data.totals || {};
+
+    // Update stat cards
+    const cur = months[months.length - 1];
+    if (cur) {
+      document.getElementById('monthCost').textContent    = fmtCost(cur.totalCost);
+      document.getElementById('monthTokens').textContent  = fmt(cur.totalTokens);
+      document.getElementById('monthCostSub').textContent = cur.month;
+      document.getElementById('monthTokensSub').textContent = `Cache Read ${fmt(cur.cacheReadTokens)}`;
+    }
+
+    if (!months.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+
+    const rows = months.map(m => `
+      <tr>
+        <td>${m.month}</td>
+        <td>${fmt(m.inputTokens)}</td>
+        <td>${fmt(m.outputTokens)}</td>
+        <td>${fmt(m.cacheCreationTokens)}</td>
+        <td>${fmt(m.cacheReadTokens)}</td>
+        <td>${fmt(m.totalTokens)}</td>
+        <td class="cost-val">${fmtCost(m.totalCost)}</td>
+        <td>${(m.modelsUsed || []).map(modelTag).join('')}</td>
+      </tr>`).join('');
+    const totalRow = `<tr class="total-row"><td>合计</td><td>${fmt(tot.inputTokens)}</td><td>${fmt(tot.outputTokens)}</td><td>${fmt(tot.cacheCreationTokens)}</td><td>${fmt(tot.cacheReadTokens)}</td><td>${fmt(tot.totalTokens)}</td><td class="cost-val">${fmtCost(tot.totalCost)}</td><td></td></tr>`;
+
+    el.innerHTML = `<div class="table-scroll"><table>
+      <thead><tr><th>月份</th><th>Input</th><th>Output</th><th>Cache Create</th><th>Cache Read</th><th>Total</th><th>Cost</th><th>模型</th></tr></thead>
+      <tbody>${rows}${totalRow}</tbody>
+    </table></div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+// ── Model breakdown ───────────────────────────────────────────────────────────
+function renderModelBreakdown(breakdowns, period) {
+  const el = document.getElementById('modelContent');
+  document.getElementById('modelPeriod').textContent = period || '今日';
+
+  if (!breakdowns || !breakdowns.length) {
+    el.innerHTML = '<div class="empty">暂无数据</div>'; return;
+  }
+
+  const totalCost   = breakdowns.reduce((s, m) => s + (m.cost || 0), 0);
+  const totalTokens = breakdowns.reduce((s, m) =>
+    s + (m.inputTokens||0) + (m.outputTokens||0) + (m.cacheCreationTokens||0) + (m.cacheReadTokens||0), 0);
+
+  const html = breakdowns.map(m => {
+    const tokens = (m.inputTokens||0)+(m.outputTokens||0)+(m.cacheCreationTokens||0)+(m.cacheReadTokens||0);
+    const pct     = totalTokens > 0 ? (tokens / totalTokens * 100).toFixed(1) : 0;
+    const costPct = totalCost   > 0 ? (m.cost   / totalCost   * 100).toFixed(0) : 0;
+    const color   = modelColor(m.modelName);
+    return `
+      <div class="model-item">
+        <div class="model-row-top">
+          ${modelTag(m.modelName)}
+          <span style="font-size:12px;color:var(--text2)">${fmtCost(m.cost)} <span style="color:var(--text3)">(${costPct}%)</span></span>
+        </div>
+        <div class="model-bar-bg">
+          <div class="model-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="model-detail">
+          <span>Input: ${fmt(m.inputTokens)}</span>
+          <span>Output: ${fmt(m.outputTokens)}</span>
+          <span>Cache R: ${fmt(m.cacheReadTokens)}</span>
+          <span>Cache C: ${fmt(m.cacheCreationTokens)}</span>
+          <span style="color:var(--text2)">共 ${fmt(tokens)} (${pct}%)</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = html;
+}
+
+// ── Date shortcuts ────────────────────────────────────────────────────────────
+function initDateInputs() {
+  document.getElementById('untilDate').value = todayISO();
+  document.getElementById('sinceDate').value = daysAgoISO(29);
+}
+function setLast30()   { document.getElementById('sinceDate').value = daysAgoISO(29);       document.getElementById('untilDate').value = todayISO(); loadDaily(); }
+function setThisMonth(){ document.getElementById('sinceDate').value = firstOfMonthISO();     document.getElementById('untilDate').value = todayISO(); loadDaily(); }
+function applyRange()  { loadDaily(); }
+
+// ── Refresh ───────────────────────────────────────────────────────────────────
+function setRefreshing(v) {
+  const btn = document.getElementById('refreshBtn');
+  const ico = document.getElementById('refreshIcon');
+  btn.disabled = v;
+  ico.classList.toggle('spinning', v);
+}
+
+async function loadAll(showSpin = false) {
+  if (showSpin) setRefreshing(true);
+  await Promise.all([loadToday(), loadMonthly(), loadWeekly(), loadDaily()]);
+  if (__STATIC) {
+    document.getElementById('lastUpdated').textContent = '快照: ' + new Date(__STATIC.generatedAt).toLocaleString('zh-CN');
+    const bar = document.getElementById('snapshotBar');
+    bar.classList.add('show');
+    document.getElementById('snapshotTime').textContent = new Date(__STATIC.generatedAt).toLocaleString('zh-CN');
+    document.getElementById('refreshBtn').title = '静态快照模式，请重新运行 node export.js';
+  } else {
+    document.getElementById('lastUpdated').textContent = '最后更新: ' + new Date().toLocaleTimeString('zh-CN');
+  }
+  if (showSpin) setRefreshing(false);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+initDateInputs();
+loadAll();
+if (!__STATIC) setInterval(loadToday, 5 * 60 * 1000);
+</script>
+</body>
+</html>
