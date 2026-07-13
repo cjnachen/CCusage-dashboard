@@ -115,6 +115,21 @@
     .error { text-align: center; padding: 20px; color: var(--red); font-size: 12px; }
     .snapshot-bar { background: rgba(251,191,36,.1); border-bottom: 1px solid rgba(251,191,36,.25); padding: 6px 24px; font-size: 12px; color: var(--amber); text-align: center; display: none; }
     .snapshot-bar.show { display: block; }
+
+    /* ── Account bar ── */
+    .account-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; overflow-x: auto; }
+    .acc-btn { flex-shrink: 0; padding: 10px 16px; font-size: 12px; font-weight: 500; color: var(--text3); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .acc-btn:hover { color: var(--text2); }
+    .acc-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .acc-btn.all-btn { color: var(--purple); }
+    .acc-btn.all-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .acc-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+    .acc-status { font-size: 10px; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+    .acc-online { background: var(--green); }
+    .acc-stale { background: var(--amber); }
+
+    /* ── Accounts overview table ── */
+    #accountsOverview { display: none; }
   </style>
 </head>
 <body>
@@ -138,6 +153,15 @@
   </div>
 </header>
 <div class="snapshot-bar" id="snapshotBar">📸 快照模式 — 数据截至 <span id="snapshotTime"></span>，重新运行 <code>node export.js</code> 可更新</div>
+
+<!-- Account selector bar -->
+<div class="account-bar" id="accountBar">
+  <button class="acc-btn active" data-id="__local__" onclick="selectAccount('__local__')">💻 本机</button>
+  <div class="acc-sep"></div>
+  <span id="remoteAccBtns"></span>
+  <div class="acc-sep"></div>
+  <button class="acc-btn all-btn" data-id="__all__" onclick="selectAccount('__all__')">📊 全部汇总</button>
+</div>
 
 <main class="main">
 
@@ -215,11 +239,196 @@
     <div id="monthlyContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
   </div>
 
+  <!-- Accounts overview (visible in All mode) -->
+  <div class="section" id="accountsOverview">
+    <div class="section-header">
+      <div class="section-title"><span class="dot" style="background:var(--green)"></span>账号总览</div>
+      <span class="section-badge" id="accountCount">-</span>
+    </div>
+    <div id="accountsContent"><div class="loading"><svg class="spinning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/></svg>加载中…</div></div>
+  </div>
+
 </main>
 
 <script>
 // ── Static mode (window.__CCUSAGE_DATA__ injected by export.js) ───────────────
 const __STATIC = window.__CCUSAGE_DATA__ || null;
+
+// ── Multi-account state ───────────────────────────────────────────────────────
+let currentAccount = '__local__';
+let remoteAccounts = [];   // [{accountId, displayName, lastUpdated, ...}]
+let remoteAccountData = {}; // { accountId: fullData }
+
+// Select account tab
+function selectAccount(id) {
+  currentAccount = id;
+  document.querySelectorAll('.acc-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.id === id);
+  });
+  document.getElementById('accountsOverview').style.display = id === '__all__' ? 'block' : 'none';
+  loadAll();
+}
+
+// Load list of remote accounts and render tab buttons
+async function loadAccountBar() {
+  if (__STATIC) return; // static mode: no remote accounts
+  try {
+    remoteAccounts = await api('/api/accounts');
+    const container = document.getElementById('remoteAccBtns');
+    if (!remoteAccounts.length) { container.innerHTML = ''; return; }
+
+    container.innerHTML = remoteAccounts.map(acc => {
+      const stale = acc.lastUpdated && (Date.now() - new Date(acc.lastUpdated)) > 2 * 3600 * 1000;
+      const dot = `<span class="acc-status ${stale ? 'acc-stale' : 'acc-online'}"></span>`;
+      return `<button class="acc-btn" data-id="${acc.accountId}" onclick="selectAccount('${acc.accountId}')">${dot}${acc.displayName}</button>`;
+    }).join('');
+
+    document.getElementById('accountCount').textContent = `${remoteAccounts.length} 台`;
+  } catch {}
+}
+
+// Load full data for a specific remote account
+async function getRemoteData(accountId) {
+  if (remoteAccountData[accountId]) return remoteAccountData[accountId];
+  const d = await api(`/api/account/${accountId}`);
+  remoteAccountData[accountId] = d;
+  return d;
+}
+
+// Merge multiple account datasets into one (for "All" view)
+function mergeAccounts(dataList) {
+  function sumTotals(list, key) {
+    const result = {};
+    for (const d of list) {
+      const t = d?.[key]?.totals || {};
+      for (const k of Object.keys(t)) {
+        result[k] = (result[k] || 0) + (t[k] || 0);
+      }
+    }
+    return result;
+  }
+  function mergeDailyArr(list) {
+    const map = {};
+    for (const d of list) {
+      for (const day of (d?.daily?.daily || [])) {
+        if (!map[day.period]) map[day.period] = { ...day, totalCost: 0, inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, modelBreakdowns: [] };
+        map[day.period].totalCost += day.totalCost || 0;
+        map[day.period].inputTokens += day.inputTokens || 0;
+        map[day.period].outputTokens += day.outputTokens || 0;
+        map[day.period].cacheCreationTokens += day.cacheCreationTokens || 0;
+        map[day.period].cacheReadTokens += day.cacheReadTokens || 0;
+        map[day.period].totalTokens += day.totalTokens || 0;
+      }
+    }
+    return Object.values(map).sort((a, b) => a.period.localeCompare(b.period));
+  }
+  function mergeWeeklyArr(list) {
+    const map = {};
+    for (const d of list) {
+      for (const w of (d?.weekly?.weekly || [])) {
+        if (!map[w.period]) map[w.period] = { ...w, totalCost: 0, inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, modelsUsed: [] };
+        map[w.period].totalCost += w.totalCost || 0;
+        map[w.period].inputTokens += w.inputTokens || 0;
+        map[w.period].outputTokens += w.outputTokens || 0;
+        map[w.period].cacheCreationTokens += w.cacheCreationTokens || 0;
+        map[w.period].cacheReadTokens += w.cacheReadTokens || 0;
+        map[w.period].totalTokens += w.totalTokens || 0;
+        (w.modelsUsed || []).forEach(m => { if (!map[w.period].modelsUsed.includes(m)) map[w.period].modelsUsed.push(m); });
+      }
+    }
+    return Object.values(map).sort((a, b) => a.period.localeCompare(b.period));
+  }
+  function mergeMonthlyArr(list) {
+    const map = {};
+    for (const d of list) {
+      for (const m of (d?.monthly?.monthly || [])) {
+        if (!map[m.period]) map[m.period] = { ...m, totalCost: 0, inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0, totalTokens: 0, modelsUsed: [] };
+        map[m.period].totalCost += m.totalCost || 0;
+        map[m.period].inputTokens += m.inputTokens || 0;
+        map[m.period].outputTokens += m.outputTokens || 0;
+        map[m.period].cacheCreationTokens += m.cacheCreationTokens || 0;
+        map[m.period].cacheReadTokens += m.cacheReadTokens || 0;
+        map[m.period].totalTokens += m.totalTokens || 0;
+        (m.modelsUsed || []).forEach(mo => { if (!map[m.period].modelsUsed.includes(mo)) map[m.period].modelsUsed.push(mo); });
+      }
+    }
+    return Object.values(map).sort((a, b) => a.period.localeCompare(b.period));
+  }
+
+  const todayTotals = sumTotals(dataList, 'today');
+  const todayBreakdowns = dataList.flatMap(d => (d?.today?.daily?.[0]?.modelBreakdowns || []));
+  const dailyArr = mergeDailyArr(dataList);
+  const weeklyArr = mergeWeeklyArr(dataList);
+  const monthlyArr = mergeMonthlyArr(dataList);
+
+  const calcTotals = (arr) => arr.reduce((t, r) => ({
+    inputTokens: (t.inputTokens || 0) + r.inputTokens,
+    outputTokens: (t.outputTokens || 0) + r.outputTokens,
+    cacheCreationTokens: (t.cacheCreationTokens || 0) + r.cacheCreationTokens,
+    cacheReadTokens: (t.cacheReadTokens || 0) + r.cacheReadTokens,
+    totalTokens: (t.totalTokens || 0) + r.totalTokens,
+    totalCost: (t.totalCost || 0) + r.totalCost,
+  }), {});
+
+  return {
+    today: { daily: [{ totals: todayTotals, modelBreakdowns: todayBreakdowns }], totals: todayTotals },
+    daily: { daily: dailyArr, totals: calcTotals(dailyArr) },
+    weekly: { weekly: weeklyArr, totals: calcTotals(weeklyArr) },
+    monthly: { monthly: monthlyArr, totals: calcTotals(monthlyArr) },
+  };
+}
+
+// Get data based on current account selection
+async function getDataForCurrentAccount() {
+  if (__STATIC) return __STATIC;
+  if (currentAccount === '__local__') return null; // use individual API calls
+  if (currentAccount === '__all__') {
+    // Local data
+    const today_t = today();
+    const [localToday, localDaily, localWeekly, localMonthly] = await Promise.all([
+      api(`/api/today`),
+      api(`/api/daily?since=${isoToYMD(document.getElementById('sinceDate').value)}&until=${isoToYMD(document.getElementById('untilDate').value)}`),
+      api('/api/weekly'),
+      api('/api/monthly'),
+    ]);
+    const localData = { today: localToday, daily: localDaily, weekly: localWeekly, monthly: localMonthly };
+    // Remote data
+    const remoteDatas = await Promise.all(remoteAccounts.map(acc => getRemoteData(acc.accountId)));
+    return mergeAccounts([localData, ...remoteDatas]);
+  }
+  // Single remote account
+  return await getRemoteData(currentAccount);
+}
+
+// Render accounts overview table
+function renderAccountsOverview(accounts) {
+  const el = document.getElementById('accountsContent');
+  if (!accounts.length) { el.innerHTML = '<div class="empty">暂无远端账号上报数据</div>'; return; }
+  const rows = accounts.map(a => {
+    const stale = a.lastUpdated && (Date.now() - new Date(a.lastUpdated)) > 2 * 3600 * 1000;
+    const age = a.lastUpdated ? timeAgo(new Date(a.lastUpdated)) : '从未';
+    const dot = `<span class="acc-status ${stale ? 'acc-stale' : 'acc-online'}" style="display:inline-block"></span>`;
+    return `<tr>
+      <td>${dot} <strong>${a.displayName}</strong> <span style="color:var(--text3);font-size:11px">${a.accountId}</span></td>
+      <td class="cost-val">${fmtCost(a.todayCost)}</td>
+      <td>${fmt(a.todayTokens)}</td>
+      <td class="cost-val">${fmtCost(a.monthCost)}</td>
+      <td>${fmt(a.monthTokens)}</td>
+      <td style="color:${stale ? 'var(--amber)' : 'var(--text3)'}">${age}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<div class="table-scroll"><table>
+    <thead><tr><th>账号</th><th>今日Cost</th><th>今日Tokens</th><th>本月Cost</th><th>本月Tokens</th><th>最后上报</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function timeAgo(date) {
+  const mins = Math.floor((Date.now() - date) / 60000);
+  if (mins < 60) return `${mins} 分钟前`;
+  if (mins < 1440) return `${Math.floor(mins / 60)} 小时前`;
+  return `${Math.floor(mins / 1440)} 天前`;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -275,7 +484,7 @@ function renderDailyChart(days) {
   if (!days || days.length === 0) { wrap.innerHTML = '<div class="empty">该时间段内无数据</div>'; return; }
 
   wrap.innerHTML = '<canvas id="dailyCanvas"></canvas>';
-  const labels  = days.map(d => fmtDate(d.date));
+  const labels  = days.map(d => fmtDate(d.period));
   const costArr = days.map(d => +(d.totalCost || 0).toFixed(4));
 
   if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
@@ -329,9 +538,17 @@ async function loadDaily() {
     let data;
     if (__STATIC) {
       const allDays = (__STATIC.daily || {}).daily || [];
-      data = { daily: allDays.filter(d => d.date >= sinceVal && d.date <= untilVal) };
-    } else {
+      data = { daily: allDays.filter(d => d.period >= sinceVal && d.period <= untilVal) };
+    } else if (currentAccount === '__local__') {
       data = await api(`/api/daily?since=${isoToYMD(sinceVal)}&until=${isoToYMD(untilVal)}`);
+    } else if (currentAccount === '__all__') {
+      const localDaily = await api(`/api/daily?since=${isoToYMD(sinceVal)}&until=${isoToYMD(untilVal)}`);
+      const remoteDatas = await Promise.all(remoteAccounts.map(acc => getRemoteData(acc.accountId)));
+      const merged = mergeAccounts([{ daily: localDaily }, ...remoteDatas]);
+      data = { daily: (merged.daily.daily || []).filter(d => d.period >= sinceVal && d.period <= untilVal) };
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = { daily: (remote?.daily?.daily || []).filter(d => d.period >= sinceVal && d.period <= untilVal) };
     }
     renderDailyChart(data.daily || []);
   } catch (e) {
@@ -341,7 +558,16 @@ async function loadDaily() {
 
 async function loadToday() {
   try {
-    const data = __STATIC ? __STATIC.today : await api('/api/today');
+    let data;
+    if (__STATIC) data = __STATIC.today;
+    else if (currentAccount === '__local__') data = await api('/api/today');
+    else if (currentAccount === '__all__') {
+      const [localToday, ...remotes] = await Promise.all([api('/api/today'), ...remoteAccounts.map(a => getRemoteData(a.accountId))]);
+      data = mergeAccounts([{ today: localToday }, ...remotes]).today;
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = remote?.today || {};
+    }
     const t = data.totals || {};
     const day = (data.daily || [])[0];
 
@@ -361,14 +587,23 @@ async function loadToday() {
 async function loadWeekly() {
   const el = document.getElementById('weeklyContent');
   try {
-    const data = __STATIC ? __STATIC.weekly : await api('/api/weekly');
+    let data;
+    if (__STATIC) data = __STATIC.weekly;
+    else if (currentAccount === '__local__') data = await api('/api/weekly');
+    else if (currentAccount === '__all__') {
+      const [localW, ...remotes] = await Promise.all([api('/api/weekly'), ...remoteAccounts.map(a => getRemoteData(a.accountId))]);
+      data = mergeAccounts([{ weekly: localW }, ...remotes]).weekly;
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = remote?.weekly || {};
+    }
     const weeks = data.weekly || [];
     const tot = data.totals || {};
     if (!weeks.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
 
     const rows = weeks.map(w => `
       <tr>
-        <td>${fmtDate(w.week)}</td>
+        <td>${fmtDate(w.period)}</td>
         <td>${fmt(w.inputTokens)}</td>
         <td>${fmt(w.outputTokens)}</td>
         <td>${fmt(w.cacheReadTokens)}</td>
@@ -390,7 +625,16 @@ async function loadWeekly() {
 async function loadMonthly() {
   const el = document.getElementById('monthlyContent');
   try {
-    const data = __STATIC ? __STATIC.monthly : await api('/api/monthly');
+    let data;
+    if (__STATIC) data = __STATIC.monthly;
+    else if (currentAccount === '__local__') data = await api('/api/monthly');
+    else if (currentAccount === '__all__') {
+      const [localM, ...remotes] = await Promise.all([api('/api/monthly'), ...remoteAccounts.map(a => getRemoteData(a.accountId))]);
+      data = mergeAccounts([{ monthly: localM }, ...remotes]).monthly;
+    } else {
+      const remote = await getRemoteData(currentAccount);
+      data = remote?.monthly || {};
+    }
     const months = data.monthly || [];
     const tot = data.totals || {};
 
@@ -399,7 +643,7 @@ async function loadMonthly() {
     if (cur) {
       document.getElementById('monthCost').textContent    = fmtCost(cur.totalCost);
       document.getElementById('monthTokens').textContent  = fmt(cur.totalTokens);
-      document.getElementById('monthCostSub').textContent = cur.month;
+      document.getElementById('monthCostSub').textContent = cur.period;
       document.getElementById('monthTokensSub').textContent = `Cache Read ${fmt(cur.cacheReadTokens)}`;
     }
 
@@ -407,7 +651,7 @@ async function loadMonthly() {
 
     const rows = months.map(m => `
       <tr>
-        <td>${m.month}</td>
+        <td>${m.period}</td>
         <td>${fmt(m.inputTokens)}</td>
         <td>${fmt(m.outputTokens)}</td>
         <td>${fmt(m.cacheCreationTokens)}</td>
@@ -485,7 +729,12 @@ function setRefreshing(v) {
 }
 
 async function loadAll(showSpin = false) {
-  if (showSpin) setRefreshing(true);
+  if (showSpin) { setRefreshing(true); remoteAccountData = {}; } // clear cache on manual refresh
+  // Refresh account bar + overview in all mode
+  if (!__STATIC) {
+    await loadAccountBar();
+    if (currentAccount === '__all__') renderAccountsOverview(remoteAccounts);
+  }
   await Promise.all([loadToday(), loadMonthly(), loadWeekly(), loadDaily()]);
   if (__STATIC) {
     document.getElementById('lastUpdated').textContent = '快照: ' + new Date(__STATIC.generatedAt).toLocaleString('zh-CN');
@@ -502,7 +751,10 @@ async function loadAll(showSpin = false) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 initDateInputs();
 loadAll();
-if (!__STATIC) setInterval(loadToday, 5 * 60 * 1000);
+if (!__STATIC) {
+  setInterval(loadToday, 5 * 60 * 1000);
+  setInterval(loadAccountBar, 2 * 60 * 1000); // refresh account list every 2 min
+}
 </script>
 </body>
 </html>
